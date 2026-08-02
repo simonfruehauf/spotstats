@@ -6,6 +6,7 @@
 <title>Liner Notes: Your Crate, Analyzed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%231DB954'/%3E%3Cpath d='M12.8 20.2c7.8-1.9 16.6-.9 22.7 3.6 1.2.9 2.9.6 3.8-.6.9-1.2.6-2.9-.6-3.8-7.3-5.1-17.4-6.2-26.5-4-1.4.3-2.3 1.7-2 3.1.3 1.4 1.7 2.3 2.6 1.7z' fill='%23fff'/%3E%3Cpath d='M12.4 26.4c6.6-1.7 14.2-.7 19.4 2.9 1 .7 2.4.5 3.1-.5.7-1 .5-2.4-.5-3.1-6.3-4.2-15.2-5.3-22.8-3.4-1.2.3-1.9 1.5-1.6 2.7.3 1.2 1.5 1.9 2.4 1.4z' fill='%23fff'/%3E%3Cpath d='M14.2 31.9c5.5-1.4 11.8-.5 16.1 2.2.9.6 2 .3 2.6-.6.6-.9.3-2-.6-2.6-5.2-3.2-12.5-4.1-19-2.5-1.1.3-1.8 1.4-1.5 2.5.3 1.1 1.4 1.8 2.4 1z' fill='%23fff'/%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
@@ -64,6 +65,28 @@
   }
   .theme-toggle:hover{ color:var(--amber); border-color:var(--amber-dim); }
   .theme-toggle:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
+
+  .sources-toggle{
+    display:none;
+    position:fixed; bottom:16px; right:16px; z-index:55;
+    font-family:var(--mono); font-size:11px; letter-spacing:.15em; text-transform:uppercase;
+    background:var(--amber); color:var(--ink); border:none; padding:12px 18px; border-radius:var(--radius);
+    cursor:pointer; font-weight:600;
+    transition: filter .15s ease;
+  }
+  .sources-toggle:hover{ filter:brightness(1.1); }
+  @media (max-width: 1299px){
+    .sources-toggle{ display:block; z-index:57; }
+    .playlist-panel{ display:none; }
+    body.panel-open .playlist-panel{
+      display:block;
+      position:fixed; top:auto; right:16px; bottom:16px; left:16px;
+      transform:none; width:auto; max-height:62vh; z-index:56;
+      background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius);
+      padding:18px;
+    }
+    body.panel-open .playlist-panel .pl-list{ max-height:40vh; }
+  }
 
   ::selection{ background: var(--amber); color: var(--ink); }
   ::-webkit-scrollbar{ width:10px; height:10px; }
@@ -159,6 +182,7 @@
   }
   .dz-btn:hover{ filter: brightness(1.1); }
   .dz-btn:active{ transform: translateY(1px); }
+  .dropzone:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
   .dz-optional{ font-size: 11.5px; color: var(--paper-dim); margin-top: 16px; font-family:var(--mono); }
   input[type=file]{ display:none; }
   .err{ margin-top:14px; font-family:var(--mono); font-size:12.5px; color: var(--clay); display:none; }
@@ -267,6 +291,8 @@
   .bar-track{ height: 7px; background: var(--surface-2); border-radius: 1px; overflow:hidden; }
   .bar-fill{ height:100%; background: linear-gradient(90deg, var(--violet), var(--amber)); border-radius:1px; transition: width .6s ease; }
   .bar-item:hover .bar-item-name{ color: var(--amber); }
+  .bar-item:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
+  .bar-item[data-kind="track"] .bar-item-name{ font-family:var(--serif); font-size:16px; }
 
   .bar-detail{
     margin-top: 12px; margin-bottom: 4px;
@@ -358,10 +384,49 @@
     .keys-wrap{ grid-template-columns: 1fr; }
     .keys-svg{ max-width: 240px; margin: 0 auto; }
   }
+
+  /* ---------- The pressing (mixtape) ---------- */
+  .mt-wrap{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .mt-side{ padding:18px 20px; }
+  .mt-side + .mt-side{ border-top:1px dashed var(--line); }
+  .mt-side-label{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--amber); margin-bottom:12px; }
+  .mt-row{ display:grid; grid-template-columns:26px 1fr auto 44px; gap:12px; align-items:baseline; padding:6px 0; font-size:13.5px; border-bottom:1px solid var(--line-soft); }
+  .mt-row:last-child{ border-bottom:none; }
+  .mt-num{ font-family:var(--mono); font-size:11px; color:var(--amber-dim); }
+  .mt-name{ color:var(--paper); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mt-artist{ color:var(--paper-dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mt-dur{ font-family:var(--mono); font-size:11px; color:var(--paper-dim); }
+  .mt-foot{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 20px; border-top:1px solid var(--line); background:var(--surface); }
+  .mt-arc{ width:100%; max-width:420px; height:auto; }
+  .mt-total{ font-family:var(--mono); font-size:11px; color:var(--paper-dim); letter-spacing:.05em; }
+
+  /* ---------- Your name on the label (identity) ---------- */
+  .id-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .id-card, .id-zodiac{ border:1px solid var(--line); border-radius:var(--radius); padding:22px 24px; position:relative; overflow:hidden; }
+  .id-card{ background:linear-gradient(135deg, rgba(232,163,61,0.08), transparent 60%), var(--surface); }
+  .id-zodiac{ background:linear-gradient(135deg, rgba(143,124,240,0.08), transparent 60%), var(--surface); }
+  .id-line{ font-family:var(--serif); font-size:19px; font-weight:600; line-height:1.5; padding-right:64px; }
+  .id-label{ font-family:var(--mono); font-size:11px; color:var(--paper-dim); margin-top:10px; letter-spacing:.05em; }
+  .id-copy{
+    position:absolute; top:16px; right:16px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    background:var(--surface-2); color:var(--amber); border:1px solid var(--line);
+    padding:6px 10px; border-radius:var(--radius); cursor:pointer;
+  }
+  .id-copy:hover{ border-color:var(--amber-dim); }
+  .id-copy:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
+  .id-zod-title{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--paper-dim-2); margin-bottom:12px; }
+  .id-sign{ font-size:15.5px; line-height:1.6; color:var(--paper); }
+  .id-sign em{ color:var(--amber); font-style:italic; font-family:var(--serif); }
+  .id-blurb{ font-size:13px; color:var(--paper-dim); margin-top:10px; line-height:1.6; }
+  .id-clash{ margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11px; color:var(--paper-dim); letter-spacing:.04em; }
+  @media (max-width: 760px){ .id-wrap{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
+<noscript><div style="max-width:640px;margin:40px auto;font-family:ui-monospace,monospace;line-height:1.6;">This tool needs JavaScript to analyze your playlists. Please enable it and reload.</div></noscript>
 <button class="theme-toggle" id="themeToggle" type="button">day</button>
+<button class="sources-toggle" id="sourcesToggle" type="button">sources</button>
 <div class="wrap">
 
   <div class="sleeve">
@@ -422,6 +487,7 @@ const loading = $('loading');
 const results = $('results');
 const toc = $('toc');
 const themeToggle = $('themeToggle');
+const sourcesToggle = $('sourcesToggle');
 const plPanel = $('plPanel');
 const plAll = $('plAll');
 const plMine = $('plMine');
@@ -436,6 +502,8 @@ let enabledSet = null;
 let myId = '';
 let owners = {};
 let lastMode = 'all';
+let revealObserver = null;
+let tocObserver = null;
 
 /* ---------- Theme (day / night) ---------- */
 function applyTheme(theme){
@@ -452,6 +520,10 @@ themeToggle.addEventListener('click', () => {
   const cur = document.documentElement.dataset.theme === 'day' ? 'day' : 'night';
   applyTheme(cur === 'day' ? 'night' : 'day');
 });
+sourcesToggle.addEventListener('click', () => {
+  const open = document.body.classList.toggle('panel-open');
+  sourcesToggle.textContent = open ? 'close' : 'sources';
+});
 
 const KEY_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const MOOD = {
@@ -466,10 +538,44 @@ const MOOD_VERDICTS = {
   tense:    "intense and wound tight; high-voltage songs with heavy hearts underneath.",
   moody:    "brooding and tender; lowercase titles, late-night windows, and songs that understand."
 };
+const SIGNS = [
+  { name:'the Cornerstones', blurb:'the root of the song, the key everything else leans on', clash:'the Wanderers' },
+  { name:'the Wanderers', blurb:'half a step off the beaten path, forever restless', clash:'the Cornerstones' },
+  { name:'the Residents', blurb:'comfortable and warm, the room nobody wants to leave', clash:'the Lovestruck' },
+  { name:'the Midnight Rehearsals', blurb:'too sharp for the radio, perfect for 2 a.m.', clash:'the Gatherers' },
+  { name:'the Openers', blurb:'the string that rings first, bright and a little loud', clash:'the Gloaming' },
+  { name:'the Keepers', blurb:'solid; the key you hum when you think no one is listening', clash:'the Black Keys Crowd' },
+  { name:'the Sharp Listeners', blurb:'listening from the edges, hearing the seams', clash:'the Strummers' },
+  { name:'the Gatherers', blurb:'everyone sings along, and you already know why', clash:'the Midnight Rehearsals' },
+  { name:'the Gloaming', blurb:'half-lit, between songs, thinking about the third verse', clash:'the Openers' },
+  { name:'the Strummers', blurb:'the key of campfires and unguarded moments', clash:'the Sharp Listeners' },
+  { name:'the Black Keys Crowd', blurb:'the blues with a poker face', clash:'the Keepers' },
+  { name:'the Lovestruck', blurb:'the key of devotion, of leaning in', clash:'the Residents' }
+];
+const MOONS = {
+  euphoric: 'you keep the lights on, loud',
+  chill: 'you float and let things drift',
+  tense: 'you feel things at speed',
+  moody: 'you notice the rain before the forecast'
+};
+const RISINGS = {
+  Slow: 'you rise slowly and stay',
+  Mid: 'you settle into a stride',
+  Groove: 'you move without being asked',
+  Uptempo: 'you arrive already running'
+};
 
 /* ---------- File handling ---------- */
 browseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
 dropzone.addEventListener('click', () => fileInput.click());
+dropzone.setAttribute('role','button');
+dropzone.setAttribute('tabindex','0');
+dropzone.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    fileInput.click();
+  }
+});
 
 ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
   e.preventDefault(); dropzone.classList.add('drag');
@@ -491,7 +597,14 @@ function handleFiles(files){
   loading.classList.add('on');
   dzSub.textContent = files.length === 1 ? files[0].name : `${files.length} files selected`;
 
+  if(typeof Papa === 'undefined'){
+    loading.classList.remove('on');
+    showError('The CSV parser (PapaParse) failed to load — check your internet connection and that the script CDN is reachable, then reload.');
+    return;
+  }
+
   let remaining = files.length;
+  let failed = 0;
   const playlists = [];
 
   files.forEach(file => {
@@ -501,30 +614,45 @@ function handleFiles(files){
       Papa.parse(e.target.result, {
         header: true,
         skipEmptyLines: true,
-        complete: (res) => { playlists.push({ name: playlistName, rows: res.data }); remaining--; if(remaining === 0) finish(playlists); },
-        error: () => { remaining--; if(remaining === 0) finish(playlists); }
+        complete: (res) => {
+          remaining--;
+          const emptyFile = file.size === 0;
+          const noRows = !res.data || res.data.length === 0;
+          const fatalErrors = (res.errors || []).some(e => e.type !== 'FieldMismatch');
+          if(!emptyFile && (noRows || fatalErrors)){
+            failed++;
+          }else{
+            playlists.push({ name: playlistName, rows: res.data || [] });
+          }
+          if(remaining === 0) finish(playlists, failed);
+        },
+        error: () => { failed++; remaining--; if(remaining === 0) finish(playlists, failed); }
       });
     };
-    reader.onerror = () => { remaining--; if(remaining === 0) finish(playlists); };
+    reader.onerror = () => { failed++; remaining--; if(remaining === 0) finish(playlists, failed); };
     reader.readAsText(file);
   });
 }
 
-function finish(playlists){
+function finish(playlists, failedCount){
   loading.classList.remove('on');
+  playlists.forEach((p, i) => { p.key = 'p' + i; });
   const items = flatten(playlists);
-  if(items.length === 0){
+  if(items.length === 0 && failedCount === 0){
     showError('No tracks found in those files. Make sure they\'re the CSVs Exportify produces, with a "Track Name" column.');
     return;
   }
+  if(failedCount > 0){
+    showError(`Loaded ${playlists.length} of ${playlists.length + failedCount} files — ${failedCount} couldn't be read. Check the .csv files and try again.`);
+  }
   loadedPlaylists = playlists;
-  enabledSet = new Set(playlists.map(p => p.name));
+  enabledSet = new Set(playlists.map(p => p.key));
   buildPlaylistPanel(playlists);
   recompute(true);
 }
 
 function recompute(initial){
-  const active = loadedPlaylists.filter(p => enabledSet.has(p.name));
+  const active = loadedPlaylists.filter(p => enabledSet.has(p.key));
   const items = flatten(active);
   lastItems = items;
   uniqueById = null;
@@ -568,7 +696,7 @@ function detectMyId(playlists){
 
 function applyMine(){
   const id = plId.value.trim();
-  const mine = loadedPlaylists.filter(p => owners[p.name] === id).map(p => p.name);
+  const mine = loadedPlaylists.filter(p => owners[p.key] === id).map(p => p.key);
   enabledSet = new Set(mine);
   syncPanelButtons();
   lastMode = 'mine';
@@ -585,17 +713,17 @@ function syncPanelButtons(){
 
 function buildPlaylistPanel(playlists){
   owners = {};
-  playlists.forEach(p => { owners[p.name] = dominantAdder(p.rows); });
+  playlists.forEach(p => { owners[p.key] = dominantAdder(p.rows); });
   const detected = detectMyId(playlists);
   if(!plId.value.trim() || myId === '') myId = detected;
   plId.value = myId || '';
 
   const sorted = playlists.slice().sort((a,b) => b.rows.length - a.rows.length);
   plList.innerHTML = sorted.map(p => {
-    const owner = owners[p.name];
-    const isMine = myId !== '' && owner === myId;
+    const owner = owners[p.key];
+    const isMine = myId !== '' && owners[p.key] === myId;
     return `
-    <button class="pl-item on${isMine ? ' mine' : ''}" type="button" data-pl="${encodeURIComponent(p.name)}" title="${owner ? 'mostly added by: ' + esc(owner) : 'no adder info'}">
+    <button class="pl-item on${isMine ? ' mine' : ''}" type="button" data-pl="${encodeURIComponent(p.key)}" title="${owner ? 'mostly added by: ' + esc(owner) : 'no adder info'}">
       <span class="pl-check">✓</span>
       <span class="pl-name">${esc(p.name)}</span>
       ${owner ? `<span class="pl-owner">${esc(owner)}</span>` : ''}
@@ -606,22 +734,22 @@ function buildPlaylistPanel(playlists){
   plList.onclick = (e) => {
     const btn = e.target.closest('.pl-item');
     if(!btn) return;
-    const name = decodeURIComponent(btn.dataset.pl);
+    const key = decodeURIComponent(btn.dataset.pl);
     if(btn.classList.contains('off')){
       btn.classList.remove('off');
       btn.classList.add('on');
-      enabledSet.add(name);
+      enabledSet.add(key);
     }else{
       btn.classList.add('off');
       btn.classList.remove('on');
-      enabledSet.delete(name);
+      enabledSet.delete(key);
     }
     lastMode = 'custom';
     recompute(false);
   };
 
   plAll.onclick = () => {
-    enabledSet = new Set(loadedPlaylists.map(p => p.name));
+    enabledSet = new Set(loadedPlaylists.map(p => p.key));
     syncPanelButtons();
     lastMode = 'all';
     recompute(false);
@@ -646,10 +774,10 @@ function buildPlaylistPanel(playlists){
 
 function syncMineClasses(){
   plList.querySelectorAll('.pl-item').forEach(b => {
-    const name = decodeURIComponent(b.dataset.pl);
-    const isMine = myId !== '' && owners[name] === myId;
+    const key = decodeURIComponent(b.dataset.pl);
+    const isMine = myId !== '' && owners[key] === myId;
     b.classList.toggle('mine', isMine);
-    const owner = owners[name];
+    const owner = owners[key];
     if(owner) b.title = 'mostly added by: ' + owner;
   });
 }
@@ -740,10 +868,15 @@ function flatten(playlists){
           time_signature: int(row, 'Time Signature')
         }
       };
-      items.push({ t, playlist: pl.name });
+      items.push({ t, playlist: pl.key });
     });
   });
   return items;
+}
+
+function plName(key){
+  const p = loadedPlaylists.find(x => x.key === key);
+  return p ? p.name : key;
 }
 
 /* ---------- Stats ---------- */
@@ -796,7 +929,7 @@ function buildData(playlists, items){
   d.mostRepeated = Object.values(appear).sort((a,b)=>b.count-a.count)[0];
 
   d.crates = playlists
-    .map(pl => ({ name: pl.name, count: pl.rows.length }))
+    .map(pl => ({ name: pl.name, key: pl.key, count: pl.rows.length }))
     .sort((a,b) => b.count - a.count);
 
   let oldest = null, newest = null;
@@ -812,6 +945,53 @@ function buildData(playlists, items){
   const byId = new Map();
   items.forEach(({t}) => { if(!byId.has(t.id)) byId.set(t.id, t); });
   const ut = Array.from(byId.values());
+
+  const idPlaylists = new Map();
+  const idFirst = new Map();
+  items.forEach(({t, playlist}) => {
+    if(!idPlaylists.has(t.id)) idPlaylists.set(t.id, new Set());
+    idPlaylists.get(t.id).add(playlist);
+    if(t.addedAt){
+      const ts = t.addedAt.getTime();
+      if(!idFirst.has(t.id) || ts < idFirst.get(t.id)) idFirst.set(t.id, ts);
+    }
+  });
+  const NOW_MS = Date.now();
+  const YEAR_MS = 365.25 * 24 * 3600 * 1000;
+  const keepsakes = ut.map(t => {
+    const pc = (idPlaylists.get(t.id) || new Set()).size;
+    const pop = typeof t.popularity === 'number' ? t.popularity : 0;
+    const firstMs = idFirst.get(t.id);
+    const years = firstMs ? Math.min(10, Math.max(0, (NOW_MS - firstMs) / YEAR_MS)) : 0;
+    return {
+      t,
+      pc,
+      pop,
+      years: firstMs ? new Date(firstMs).getFullYear() : null,
+      score: 3 * pc + 2 * (pop / 100) + 0.25 * years
+    };
+  }).filter(k => k.pc > 0)
+    .sort((a, b) => b.score - a.score || b.pc - a.pc || a.t.name.localeCompare(b.t.name))
+    .slice(0, 10);
+  d.keepsakes = keepsakes;
+
+  const mtPool = ut
+    .filter(t => t.feats.valence !== null && t.feats.energy !== null && (t.duration_ms || 0) >= 45000)
+    .map(t => {
+      const pc = (idPlaylists.get(t.id) || new Set()).size;
+      const pop = typeof t.popularity === 'number' ? t.popularity : 0;
+      return { t, pc, pop, score: 2 * pc + pop / 100 };
+    })
+    .sort((a, b) => b.score - a.score || b.pc - a.pc || a.t.name.localeCompare(b.t.name))
+    .slice(0, 40);
+  const mtCount = Math.min(14, mtPool.length);
+  d.mixtape = mtPool.length >= 1 ? sequenceMixtape(mtPool, mtCount).map(it => ({
+    t: it.t,
+    src: (() => {
+      const s = idPlaylists.get(it.t.id);
+      return s && s.size ? plName([...s][0]) : '';
+    })()
+  })) : [];
 
   d.hasFeats = ut.some(t => t.feats.valence !== null || t.feats.energy !== null);
 
@@ -873,7 +1053,7 @@ function buildData(playlists, items){
   const featTracks = ut.filter(withFeat);
   d.danceAvg = mean(featTracks.map(t => t.feats.danceability));
   d.liveAvg  = mean(featTracks.map(t => t.feats.liveness));
-  d.instrPct = Math.round(100 * mean(featTracks.map(t => t.feats.instrumentalness)));
+  d.instrPct = featTracks.length ? Math.round(100 * mean(featTracks.map(t => t.feats.instrumentalness))) : null;
   d.tempoAvg = mean(ut.filter(t => t.feats.tempo !== null).map(t => t.feats.tempo));
   d.featureCover = featTracks.length;
 
@@ -898,6 +1078,30 @@ function buildData(playlists, items){
   d.maxTimeline = d.timeline.length ? Math.max(...d.timeline.map(x=>x[1])) : 1;
 
   d.diversity = Math.round(100 * d.uniqueArtists / d.unique);
+
+  const topDecade = d.decades.length ? d.decades.slice().sort((a,b) => b[1] - a[1])[0][0] : null;
+  const segs = [];
+  if(d.keyTotal > 0){
+    const mode = d.majorPct === null ? '' : (d.majorPct >= 50 ? ' major' : ' minor');
+    segs.push(KEY_NAMES[d.topKeyIdx] + mode);
+  }
+  if(d.dominant && d.dominant.count) segs.push(MOOD[d.dominant.key].name);
+  if(d.tempoAvg !== null){
+    const band = d.tempoAvg < 80 ? 'Slow' : d.tempoAvg < 110 ? 'Mid' : d.tempoAvg < 130 ? 'Groove' : 'Uptempo';
+    d.bpmBand = band;
+    segs.push(band + ' BPM');
+  }else{
+    d.bpmBand = null;
+  }
+  if(topDecade !== null) segs.push(String(topDecade) + 's');
+  if(d.topGenres.length) segs.push(d.topGenres[0][0]);
+  d.identityLine = segs.join(' · ');
+  d.identityLabel = d.topLabels.length ? d.topLabels[0][0] : null;
+  d.sign = (d.keyTotal > 0 && d.topKeyIdx !== undefined) ? SIGNS[d.topKeyIdx] : null;
+  d.signMoon = (d.dominant && d.dominant.count) ? MOOD[d.dominant.key].name : null;
+  d.signRising = d.bpmBand;
+  d.signSky = topDecade;
+
   return d;
 }
 
@@ -916,10 +1120,13 @@ function render(d, scroll){
   sections.push(secMood(d));
   sections.push(secKeys(d));
   sections.push(secCharacter(d));
+  sections.push(secKeepsakes(d));
   sections.push(secTimeline(d));
   sections.push(secTimeCapsule(d));
   sections.push(secCrates(d));
   sections.push(secLabels(d));
+  sections.push(secMixtape(d));
+  sections.push(secIdentity(d));
 
   const rendered = sections.filter(Boolean);
   let html = '';
@@ -1210,7 +1417,7 @@ function secCrates(d){
   return {
     title: 'The biggest crates',
     dek: 'The heaviest playlists by track count.',
-    body: barList(top.map(c => ({ name: c.name, count: c.count, kind:'playlist', value:c.name })), max, '${count} tracks')
+    body: barList(top.map(c => ({ name: c.name, count: c.count, kind:'playlist', value: c.key })), max, '${count} tracks')
   };
 }
 
@@ -1223,12 +1430,120 @@ function secLabels(d){
   };
 }
 
+function secKeepsakes(d){
+  if(!d.keepsakes || !d.keepsakes.length) return null;
+  const max = d.keepsakes[0].score;
+  const rows = d.keepsakes.map((k, i) => `
+    <div class="bar-item" data-kind="track" data-value="${encodeURIComponent(k.t.id)}" tabindex="0" role="button" aria-expanded="false">
+      <div class="bar-item-top">
+        <span class="bar-item-name">${esc(k.t.name)} <span style="color:var(--paper-dim);font-weight:400;">· ${esc((k.t.artists||[]).map(a=>a.name).join(', '))}</span></span>
+        <span class="bar-item-right"><span class="bar-item-val">in ${k.pc} ${k.pc === 1 ? 'crate' : 'crates'}${k.years ? ` · kept since ${k.years}` : ''}</span><span class="bar-chevron">▸</span></span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(k.score/max*100).toFixed(0)}%"></div></div>
+    </div>
+  `).join('');
+  return {
+    title: 'The keepsakes',
+    dek: 'The songs you keep circling back to, ranked by your own signal: <strong>3 ×</strong> crate appearances, <strong>2 ×</strong> popularity, plus a small bonus for how long you\'ve kept them. Click a row for the crates that hold it.',
+    body: `<div class="bar-list">${rows}</div>`
+  };
+}
+
+function secMixtape(d){
+  if(!d.mixtape || d.mixtape.length < 2) return null;
+  const n = d.mixtape.length;
+  const split = Math.ceil(n / 2);
+  const total = d.mixtape.reduce((s, x) => s + (x.t.duration_ms || 0), 0);
+  const en = d.mixtape.map(x => x.t.feats.energy);
+  const emin = Math.min(...en), emax = Math.max(...en);
+  const pt = en.map((v, i) => `${((i / (n - 1)) * 240).toFixed(0)},${(36 - ((v - emin) / (emax - emin || 1)) * 30).toFixed(0)}`).join(' ');
+  const sideHtml = (label, arr, start) => `
+    <div class="mt-side">
+      <div class="mt-side-label">${label}</div>
+      ${arr.map((x, i) => `
+        <div class="mt-row" title="${esc(x.src ? 'from ' + x.src : '')}">
+          <span class="mt-num">${start + i + 1}</span>
+          <span class="mt-name">${esc(x.t.name)}</span>
+          <span class="mt-artist">${esc((x.t.artists||[]).map(a=>a.name).join(', '))}</span>
+          <span class="mt-dur">${fmtDur(x.t.duration_ms || 0)}</span>
+        </div>
+      `).join('')}
+    </div>`;
+  return {
+    title: 'The pressing',
+    dek: 'A mixtape sequenced from your crate: the energy builds to a peak around the middle, then breathes out. Hover a track to see which playlist it came from.',
+    body: `
+      <div class="mt-wrap">
+        <div class="mt-sides">
+          ${sideHtml('Side A', d.mixtape.slice(0, split), 0)}
+          ${sideHtml('Side B', d.mixtape.slice(split), split)}
+        </div>
+        <div class="mt-foot">
+          <svg viewBox="0 0 240 42" class="mt-arc" role="img" aria-label="Energy arc of the mixtape"><polyline points="${pt}" fill="none" stroke="var(--amber)" stroke-width="2"/></svg>
+          <div class="mt-total">${fmtDur(total)} total</div>
+        </div>
+      </div>
+    `
+  };
+}
+
+function secIdentity(d){
+  if(!d.sign && !d.identityLine) return null;
+  const card = d.identityLine ? `
+    <div class="id-card">
+      <div class="id-line">${esc(d.identityLine)}</div>
+      ${d.identityLabel ? `<div class="id-label">label: ${esc(d.identityLabel)}</div>` : ''}
+      <button type="button" class="id-copy" data-copy="${encodeURIComponent(d.identityLine)}">copy</button>
+    </div>` : '';
+  const moonLine = d.signMoon ? `, moon in <em>${esc(d.signMoon)}</em>` : '';
+  const risingLine = d.signRising ? `, rising in <em>${esc(d.signRising)} BPM</em>` : '';
+  const skyLine = d.signSky !== null ? `, under a <em>${d.signSky}s sky</em>` : '';
+  const sign = d.sign ? `
+    <div class="id-zodiac">
+      <div class="id-zod-title">Ear-oscope · your listening sign</div>
+      <div class="id-sign">Your ears are <strong>${esc(d.sign.name)}</strong>${moonLine}${risingLine}${skyLine}.</div>
+      <div class="id-blurb">${esc(d.sign.blurb)}.</div>
+      <div class="id-clash">Dramatic with ${esc(d.sign.clash)}.</div>
+    </div>` : '';
+  return {
+    title: 'Your name on the label',
+    dek: 'The crate, reduced to one line — and the stars it orbits.',
+    body: `<div class="id-wrap">${card}${sign}</div>`
+  };
+}
+
+function copyText(text, btn){
+  const done = () => {
+    const old = btn.textContent;
+    btn.textContent = 'copied';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  };
+  const legacy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    done();
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(legacy);
+  }else legacy();
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.id-copy');
+  if(btn) copyText(decodeURIComponent(btn.dataset.copy), btn);
+});
+
 /* ---------- Shared bar list with click-to-drill ---------- */
 function barList(items, max, suffix){
   return `
     <div class="bar-list">
       ${items.map(it => `
-        <div class="bar-item" data-kind="${it.kind}" data-value="${encodeURIComponent(it.value)}">
+        <div class="bar-item" data-kind="${it.kind}" data-value="${encodeURIComponent(it.value)}" tabindex="0" role="button" aria-expanded="false">
           <div class="bar-item-top">
             <span class="bar-item-name">${esc(it.name)}</span>
             <span class="bar-item-right"><span class="bar-item-val">${suffix.replace('${count}', it.count)}</span><span class="bar-chevron">▸</span></span>
@@ -1245,14 +1560,23 @@ results.addEventListener('click', (e) => {
   if(!row) return;
   toggleDetail(row, row.dataset.kind, decodeURIComponent(row.dataset.value));
 });
+results.addEventListener('keydown', (e) => {
+  const row = e.target.closest('.bar-item[data-kind]');
+  if(row && (e.key === 'Enter' || e.key === ' ')){
+    e.preventDefault();
+    toggleDetail(row, row.dataset.kind, decodeURIComponent(row.dataset.value));
+  }
+});
 
 function toggleDetail(row, kind, value){
   const existing = row.querySelector('.bar-detail');
   if(existing){
     existing.remove();
     row.classList.remove('open');
+    row.setAttribute('aria-expanded', 'false');
     return;
   }
+  row.setAttribute('aria-expanded', 'true');
   row.classList.add('open');
 
   const matches = lastItems.filter(({t, playlist}) => {
@@ -1260,6 +1584,7 @@ function toggleDetail(row, kind, value){
     if(kind === 'artist') return (t.artists||[]).some(a => a.name === value);
     if(kind === 'label') return t.label === value;
     if(kind === 'playlist') return playlist === value;
+    if(kind === 'track') return t.id === value;
     return false;
   });
 
@@ -1271,7 +1596,7 @@ function toggleDetail(row, kind, value){
       if(!byId[t.id].playlists.includes(playlist)) byId[t.id].playlists.push(playlist);
     });
     rows = Object.values(byId)
-      .map(({t, playlists}) => ({ t, playlist: playlists.join(', ') }))
+      .map(({t, playlists}) => ({ t, playlist: playlists.map(plName).join(', ') }))
       .sort((a,b) => a.t.name.localeCompare(b.t.name));
   }else{
     rows = matches.sort((a,b) => a.playlist.localeCompare(b.playlist) || a.t.name.localeCompare(b.t.name));
@@ -1288,7 +1613,7 @@ function toggleDetail(row, kind, value){
         <div class="bar-detail-row">
           <span class="bdr-track">${esc(t.name)}</span>
           <span class="bdr-artist">${esc((t.artists||[]).map(a=>a.name).join(', '))}</span>
-          <span class="bdr-playlist">${esc(playlist)}</span>
+          <span class="bdr-playlist">${esc(plName(playlist))}</span>
         </div>
       `).join('')}
     `;
@@ -1313,18 +1638,76 @@ function shuffle(arr){
   }
   return a;
 }
+function arcTarget(i, n){
+  const peak = Math.max(1, Math.floor(n * 0.6));
+  if(i <= peak) return 0.5 + (i / peak) * 0.3;
+  return Math.max(0.3, 0.8 - (i - peak) * 0.06);
+}
+
+function sequenceMixtape(pool, n){
+  if(!pool.length) return [];
+  const seq = [];
+  const used = new Set();
+  const artistUsed = {};
+  const moodUsed = {};
+  const energyOf = t => t.feats.energy;
+  const valenceOf = t => t.feats.valence;
+  const moodOf = t => valenceOf(t) >= 0.5 && energyOf(t) >= 0.5 ? 'euphoric'
+                   : valenceOf(t) >= 0.5 ? 'chill'
+                   : energyOf(t) >= 0.5 ? 'tense' : 'moody';
+  const firstArtist = t => (t.artists && t.artists[0]) ? t.artists[0].name : '';
+  const moodCap = Math.ceil(n / 2);
+
+  const byEnergy = pool.slice().sort((a, b) => (energyOf(b.t) + valenceOf(b.t)) - (energyOf(a.t) + valenceOf(a.t)));
+  let cur = byEnergy[0];
+  seq.push(cur);
+  used.add(cur.t.id);
+  artistUsed[firstArtist(cur.t)] = 1;
+  moodUsed[moodOf(cur.t)] = 1;
+
+  for(let i = 1; i < n - 1; i++){
+    const target = arcTarget(i, n);
+    const prev = seq[seq.length - 1];
+    const prevMood = moodOf(prev.t);
+    let best = null;
+    for(const it of pool){
+      if(used.has(it.t.id)) continue;
+      const mood = moodOf(it.t);
+      let s = 1 - Math.abs(energyOf(it.t) - target);
+      if(firstArtist(it.t) === firstArtist(prev.t)) s -= 2;
+      if(mood === prevMood) s -= 0.3;
+      if((artistUsed[firstArtist(it.t)] || 0) >= 3) s -= 3;
+      if((moodUsed[mood] || 0) >= moodCap) s -= 3;
+      s += 0.0001 * it.score;
+      if(!best || s > best.s || (Math.abs(s - best.s) < 1e-12 && it.score > best.score)) best = { it, s };
+    }
+    if(!best) break;
+    seq.push(best.it);
+    used.add(best.it.t.id);
+    const a = firstArtist(best.it.t);
+    artistUsed[a] = (artistUsed[a] || 0) + 1;
+    const m = moodOf(best.it.t);
+    moodUsed[m] = (moodUsed[m] || 0) + 1;
+  }
+
+  const rest = pool.filter(it => !used.has(it.t.id)).sort((a, b) => (energyOf(a.t) + valenceOf(a.t)) - (energyOf(b.t) + valenceOf(b.t)));
+  if(rest.length) seq.push(rest[0]);
+  return seq;
+}
 
 /* ---------- Reveal on scroll ---------- */
 function observeReveals(){
   const rows = results.querySelectorAll('.track-row');
+  if(revealObserver) revealObserver.disconnect();
+  revealObserver = null;
   if(!('IntersectionObserver' in window)){
     rows.forEach(el => el.classList.add('in'));
     return;
   }
-  const io = new IntersectionObserver((entries) => {
+  revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(en => { if(en.isIntersecting) en.target.classList.add('in'); });
   }, { threshold: 0.06 });
-  rows.forEach(el => io.observe(el));
+  rows.forEach(el => revealObserver.observe(el));
 }
 
 /* ---------- Table of contents ---------- */
@@ -1338,13 +1721,14 @@ function buildToc(rendered){
   toc.innerHTML = `<div class="toc-title">Tracklist</div>${links}`;
   const rows = results.querySelectorAll('.track-row');
   if(!('IntersectionObserver' in window)) return;
-  const io = new IntersectionObserver((entries) => {
+  if(tocObserver) tocObserver.disconnect();
+  tocObserver = new IntersectionObserver((entries) => {
     entries.forEach(en => {
       if(!en.isIntersecting) return;
       toc.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.target === en.target.id));
     });
   }, { rootMargin: '-30% 0px -60% 0px' });
-  rows.forEach(el => io.observe(el));
+  rows.forEach(el => tocObserver.observe(el));
 }
 </script>
 </body>
