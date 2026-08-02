@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liner Notes: Your Crate, Analyzed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --ink:#0d0b1e;
+    --ink-2:#120f2a;
+    --surface:#171331;
+    --surface-2:#221c44;
+    --surface-3:#2b2452;
+    --paper:#eae4f7;
+    --paper-dim:#a19ac6;
+    --paper-dim-2:#6f6796;
+    --amber:#e8a33d;
+    --amber-dim:#8a6a35;
+    --violet:#8f7cf0;
+    --teal:#6fd3b7;
+    --clay:#e07a5f;
+    --line:#2f2854;
+    --line-soft:#241e44;
+    --tint-amber:rgba(232,163,61,0.07);
+    --radius:3px;
+    --serif:'Fraunces', Georgia, serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'Public Sans', system-ui, sans-serif;
+  }
+  :root[data-theme="day"]{
+    --ink:#f6f3ec;
+    --ink-2:#efe9df;
+    --surface:#ffffff;
+    --surface-2:#f2ecdf;
+    --surface-3:#e5decd;
+    --paper:#211d3d;
+    --paper-dim:#5d5680;
+    --paper-dim-2:#918aa8;
+    --amber:#b07a1d;
+    --amber-dim:#8a6a35;
+    --violet:#6b5bd0;
+    --teal:#1f9e80;
+    --clay:#c05a3c;
+    --line:#dcd4c0;
+    --line-soft:#e9e3d4;
+    --tint-amber:rgba(176,122,29,0.09);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{ scroll-behavior:smooth; }
+  html,body{background:var(--ink); color:var(--paper); font-family:var(--sans);}
+  body{ min-height:100vh; padding: 48px 24px 120px; }
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  .theme-toggle{
+    position:fixed; top:16px; right:16px; z-index:60;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.15em; text-transform:uppercase;
+    background:var(--surface-2); color:var(--paper-dim);
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:8px 14px; cursor:pointer;
+    transition: color .15s ease, border-color .15s ease, background .2s ease;
+  }
+  .theme-toggle:hover{ color:var(--amber); border-color:var(--amber-dim); }
+  .theme-toggle:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
+
+  ::selection{ background: var(--amber); color: var(--ink); }
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background: var(--ink); }
+  ::-webkit-scrollbar-thumb{ background: var(--surface-3); border-radius:6px; }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--amber-dim); }
+
+  /* ---------- Hero / sleeve ---------- */
+  .sleeve{
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 44px clamp(20px, 5vw, 56px);
+    position: relative;
+    background:
+      radial-gradient(circle at 88% 10%, rgba(232,163,61,0.10), transparent 55%),
+      radial-gradient(circle at 4% 96%, rgba(143,124,240,0.08), transparent 50%),
+      var(--surface);
+    overflow:hidden;
+  }
+  .sleeve::after{
+    content:''; position:absolute; right:-60px; top:-60px; width:180px; height:180px;
+    border-radius:50%; border: 1px solid var(--line); opacity:.6;
+  }
+  .sleeve::before{
+    content:''; position:absolute; right:-38px; top:-38px; width:136px; height:136px;
+    border-radius:50%; border: 1px solid var(--line); opacity:.45;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{
+    content:''; width:8px; height:8px; border-radius:50%;
+    background: var(--amber); display:inline-block;
+    box-shadow: 0 0 0 3px rgba(232,163,61,0.18);
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight: 600;
+    font-size: clamp(38px, 6vw, 66px);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    margin-top: 14px;
+    max-width: 14ch;
+    position:relative;
+  }
+  h1 em{ font-style: italic; color: var(--amber); font-weight: 500; }
+  .dek{
+    margin-top: 18px;
+    max-width: 52ch;
+    color: var(--paper-dim);
+    font-size: 15.5px;
+    line-height: 1.65;
+    position:relative;
+  }
+  .dek strong{ color: var(--paper); font-weight:600; }
+
+  /* ---------- Upload zone ---------- */
+  .dropzone{
+    margin-top: 34px;
+    border: 1px dashed var(--amber-dim);
+    border-radius: var(--radius);
+    padding: 24px 26px;
+    display:flex; align-items:center; justify-content:space-between; gap: 20px;
+    flex-wrap: wrap;
+    background: rgba(232,163,61,0.03);
+    transition: border-color .15s ease, background .15s ease;
+    cursor:pointer;
+    position:relative;
+  }
+  .dropzone.drag{ border-color: var(--amber); background: rgba(232,163,61,0.09); }
+  .dz-left{ display:flex; align-items:center; gap:16px; }
+  .dz-icon{
+    width:44px; height:44px; border-radius:50%;
+    border: 1px solid var(--amber-dim);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--amber); font-family:var(--mono); font-size:18px;
+    flex-shrink:0;
+  }
+  .dz-title{ font-weight:600; font-size:14.5px; }
+  .dz-sub{ font-family:var(--mono); font-size:11.5px; color: var(--paper-dim); margin-top:4px; }
+  .dz-btn{
+    font-family:var(--mono);
+    font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+    background: var(--amber); color: var(--ink);
+    border:none; padding: 12px 20px; border-radius: var(--radius);
+    cursor:pointer; font-weight:600;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .dz-btn:hover{ filter: brightness(1.1); }
+  .dz-btn:active{ transform: translateY(1px); }
+  .dz-optional{ font-size: 11.5px; color: var(--paper-dim); margin-top: 16px; font-family:var(--mono); }
+  input[type=file]{ display:none; }
+  .err{ margin-top:14px; font-family:var(--mono); font-size:12.5px; color: var(--clay); display:none; }
+  .loading{ display:none; margin-top:16px; font-family:var(--mono); font-size:12px; color: var(--violet); letter-spacing:.08em; text-transform:uppercase; }
+  .loading.on{ display:block; }
+
+  /* ---------- Side panels: tracklist + sources ---------- */
+  .toc, .playlist-panel{
+    position:fixed; top:50%; transform:translateY(-50%);
+    width: 200px;
+    font-family:var(--mono);
+    z-index: 20;
+    display:none;
+  }
+  .toc{ left: calc(50vw - 490px - 216px); }
+  .playlist-panel{ right: calc(50vw - 490px - 216px); }
+  .toc-title{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--paper-dim-2); margin-bottom:12px; }
+  .toc a{
+    display:flex; gap:10px; align-items:baseline;
+    font-size:11px; color:var(--paper-dim-2);
+    text-decoration:none; padding:4px 0;
+    transition: color .15s ease;
+  }
+  .toc a .toc-n{ color:var(--paper-dim-2); font-size:10px; width:14px; flex-shrink:0; }
+  .toc a:hover{ color:var(--amber); }
+  .toc a.active{ color:var(--amber); }
+  .toc a.active .toc-n{ color:var(--amber); }
+
+  .pl-controls{ display:flex; gap:14px; margin:-4px 0 8px; }
+  .pl-controls button{
+    background:none; border:none; padding:0; cursor:pointer;
+    font-family:var(--mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--paper-dim-2); transition: color .15s ease;
+  }
+  .pl-controls button:hover{ color:var(--amber); }
+  .pl-controls button:focus-visible{ outline:1px solid var(--amber); outline-offset:2px; }
+  .pl-controls button.on{ color:var(--amber); }
+  .pl-id{ display:flex; align-items:center; gap:8px; margin:-2px 0 10px; }
+  .pl-id label{ font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--paper-dim-2); flex-shrink:0; }
+  .pl-id input{
+    flex:1; min-width:0; background:var(--surface-2); border:1px solid var(--line);
+    color:var(--paper); font-family:var(--mono); font-size:10.5px; padding:4px 6px; border-radius:2px;
+  }
+  .pl-id input::placeholder{ color:var(--paper-dim-2); }
+  .pl-id input:focus{ outline:none; border-color:var(--amber); }
+  .pl-owner{ flex-shrink:0; font-size:9px; color:var(--paper-dim-2); max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pl-item.mine .pl-check{ color:var(--teal); }
+  .pl-summary{ font-size:10px; color:var(--paper-dim-2); letter-spacing:.05em; margin-bottom:10px; line-height:1.6; }
+  .pl-list{ max-height: 52vh; overflow-y:auto; padding-right:6px; }
+  .pl-item{
+    display:flex; align-items:baseline; gap:8px; width:100%;
+    background:none; border:none; padding:4px 0; cursor:pointer;
+    font-family:var(--mono); font-size:11px; text-align:left;
+    color:var(--paper-dim-2); transition: color .15s ease;
+  }
+  .pl-check{ width:14px; flex-shrink:0; font-size:11px; color:var(--amber); }
+  .pl-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pl-count{ margin-left:auto; flex-shrink:0; }
+  .pl-item:hover .pl-name{ color:var(--amber); }
+  .pl-item.on .pl-name{ color:var(--paper); }
+  .pl-item.off{ opacity:.4; }
+  .pl-item.off .pl-check{ color:var(--paper-dim-2); }
+
+  @media (min-width: 1300px){
+    .wrap{ max-width: 860px; }
+    .toc, .playlist-panel{ display:block; }
+  }
+
+  /* ---------- Results ---------- */
+  #results{ display:none; margin-top: 64px; }
+  .track-row{
+    display:grid; grid-template-columns: 46px 1fr;
+    gap: 22px; align-items:start;
+    padding: 34px 0; border-top: 1px solid var(--line);
+    scroll-margin-top: 24px;
+    opacity:0; transform: translateY(16px);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .track-row.in{ opacity:1; transform:none; }
+  .track-row:last-child{ border-bottom: 1px solid var(--line); }
+  .num{
+    font-family:var(--mono); color: var(--amber-dim); font-size: 12px; padding-top: 6px;
+    letter-spacing:.06em;
+  }
+  .num::after{ content:''; display:block; width:1px; height:22px; background:var(--line); margin-top:8px; }
+  .track-title{
+    font-family:var(--serif); font-weight:600; font-size: 24px; letter-spacing:-0.005em;
+  }
+  .track-dek{ color: var(--paper-dim); font-size: 13.5px; margin-top: 8px; line-height:1.65; max-width:64ch;}
+  .track-dek strong{ color: var(--paper); font-weight:600; }
+  .block{ margin-top: 22px; }
+
+  .stat-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border:1px solid var(--line); }
+  .stat{ background: var(--surface); padding: 22px 18px; }
+  .stat-num{ font-family:var(--mono); font-size: 26px; color: var(--amber); font-weight:600; }
+  .stat-label{ font-size: 11px; color: var(--paper-dim); margin-top: 7px; letter-spacing:.04em; line-height:1.4; }
+
+  .bar-list{ margin-top: 16px; }
+  .bar-item{ margin-bottom: 13px; cursor: pointer; user-select: none; }
+  .bar-item-top{ display:flex; justify-content:space-between; align-items:center; font-size:13.5px; margin-bottom:5px; gap:12px; }
+  .bar-item-name{ font-weight:500; }
+  .bar-item-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .bar-item-val{ font-family:var(--mono); color: var(--paper-dim); font-size:12px; }
+  .bar-chevron{ color: var(--amber); font-size: 11px; transition: transform .15s ease; display:inline-block; }
+  .bar-item.open .bar-chevron{ transform: rotate(90deg); }
+  .bar-track{ height: 7px; background: var(--surface-2); border-radius: 1px; overflow:hidden; }
+  .bar-fill{ height:100%; background: linear-gradient(90deg, var(--violet), var(--amber)); border-radius:1px; transition: width .6s ease; }
+  .bar-item:hover .bar-item-name{ color: var(--amber); }
+
+  .bar-detail{
+    margin-top: 12px; margin-bottom: 4px;
+    border-left: 2px solid var(--amber-dim);
+    padding-left: 16px;
+    max-height: 280px; overflow-y: auto;
+    cursor: default;
+    background: linear-gradient(90deg, rgba(143,124,240,0.05), transparent 60%);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .bar-detail-row{
+    display:grid; grid-template-columns: 1.5fr 1fr 0.9fr;
+    gap: 12px; padding: 8px 0;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12.5px;
+  }
+  .bar-detail-row:last-child{ border-bottom: none; }
+  .bdr-track{ color: var(--paper); font-weight: 500; }
+  .bdr-artist{ color: var(--paper-dim); }
+  .bdr-playlist{ font-family:var(--mono); font-size: 11px; color: var(--violet); text-align:right; }
+  .bar-detail-empty{ font-family:var(--mono); font-size: 12px; color: var(--paper-dim); padding: 6px 0; }
+  .bar-detail-head{
+    display:grid; grid-template-columns: 1.5fr 1fr 0.9fr; gap:12px;
+    font-family:var(--mono); font-size: 10px; letter-spacing:.05em;
+    color: var(--paper-dim-2); text-transform:uppercase; padding-bottom: 6px; border-bottom:1px solid var(--line-soft);
+  }
+  .bdr-head-playlist{ text-align:right; }
+
+  .decade-row{ display:flex; align-items:center; gap: 14px; margin-bottom: 10px; }
+  .decade-label{ font-family:var(--mono); font-size:12px; color: var(--paper-dim); width: 56px; flex-shrink:0; }
+  .decade-track{ flex:1; height:16px; background: var(--surface-2); position:relative; border-radius:1px; overflow:hidden; }
+  .decade-fill{ height:100%; background: var(--amber); opacity:.85; border-radius:1px; transition: width .6s ease; }
+  .decade-count{ font-family:var(--mono); font-size:11px; color: var(--paper-dim); width:34px; text-align:right; }
+
+  /* ---------- Mood map ---------- */
+  .mood-wrap{ display:grid; grid-template-columns: 1fr 220px; gap: 28px; align-items:center; }
+  .mood-svg{ width:100%; height:auto; background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); }
+  .mood-legend{ font-family:var(--mono); font-size:11px; color: var(--paper-dim); display:flex; flex-direction:column; gap:10px; }
+  .mood-legend .ml-row{ display:flex; align-items:center; gap:10px; }
+  .mood-legend .swatch{ width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  .mood-legend .ml-name{ flex:1; }
+  .mood-legend .ml-val{ color: var(--amber); }
+  .mood-verdict{
+    margin-top: 20px; padding: 16px 20px;
+    border:1px solid var(--line); border-left:3px solid var(--amber);
+    background: linear-gradient(90deg, var(--tint-amber), transparent);
+    font-size: 14.5px; line-height:1.6; color: var(--paper);
+  }
+  .mood-verdict em{ color: var(--amber); font-style: italic; font-family:var(--serif); }
+
+  /* ---------- Key wheel ---------- */
+  .keys-wrap{ display:grid; grid-template-columns: 320px 1fr; gap: 36px; align-items:center; }
+  .keys-svg{ width:100%; max-width:320px; height:auto; }
+  .keys-side{ display:flex; flex-direction:column; gap:14px; }
+  .key-callout{
+    font-family:var(--mono); font-size: 12px; color: var(--paper-dim); line-height:1.7;
+    border-top:1px solid var(--line); padding-top:14px;
+  }
+  .key-callout strong{ color: var(--amber); font-size: 20px; display:block; margin-bottom:4px; font-weight:600;}
+  .sig-row{ display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+  .sig-label{ font-family:var(--mono); font-size:12px; color: var(--paper-dim); width:56px; flex-shrink:0; }
+  .sig-track{ flex:1; height:13px; background: var(--surface-2); border-radius:1px; overflow:hidden; }
+  .sig-fill{ height:100%; background: linear-gradient(90deg, var(--violet), var(--teal)); border-radius:1px; }
+  .sig-count{ font-family:var(--mono); font-size:11px; color: var(--paper-dim); width:34px; text-align:right; }
+
+  /* ---------- Timeline ---------- */
+  .tl-row{ display:flex; align-items:center; gap:14px; margin-bottom:9px; }
+  .tl-label{ font-family:var(--mono); font-size:11.5px; color: var(--paper-dim); width:44px; flex-shrink:0; text-align:right;}
+  .tl-track{ flex:1; height:15px; background: var(--surface-2); position:relative; border-radius:1px; overflow:hidden; }
+  .tl-fill{ height:100%; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius:1px; transition: width .6s ease;}
+  .tl-count{ font-family:var(--mono); font-size:11px; color: var(--paper-dim); width:34px; text-align:right; }
+
+  .stat-inline{ display:flex; flex-wrap:wrap; gap: 10px 24px; margin-top: 18px; font-size: 13px; color: var(--paper-dim); }
+  .stat-inline b{ color: var(--amber); font-family:var(--mono); font-weight:600; }
+
+  footer{ margin-top: 72px; text-align:center; color: var(--paper-dim-2); font-family:var(--mono); font-size:11px; letter-spacing:.08em; line-height:1.9;}
+  footer .foot-rule{ width: 40px; height:1px; background: var(--amber-dim); margin: 0 auto 14px; }
+
+  @media (max-width: 900px){
+    .mood-wrap{ grid-template-columns: 1fr; }
+    .keys-wrap{ grid-template-columns: 260px 1fr; }
+    .toc{ display:none; }
+  }
+  @media (max-width: 640px){
+    .stat-grid{ grid-template-columns: 1fr 1fr; }
+    .dropzone{ flex-direction:column; align-items:flex-start; }
+    .dz-btn{ width:100%; }
+    .track-row{ grid-template-columns: 40px 1fr; gap:14px; }
+    .keys-wrap{ grid-template-columns: 1fr; }
+    .keys-svg{ max-width: 240px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button">day</button>
+<div class="wrap">
+
+  <div class="sleeve">
+    <div class="eyebrow">Side A · Personal Pressing</div>
+    <h1>Liner notes for <em>your</em> crate.</h1>
+    <p class="dek">Drop in your <strong>Exportify CSVs</strong>: one per playlist, or the whole unzipped folder at once. Everything runs in your browser; nothing leaves it. The deeper your CSVs, the deeper the reading.</p>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dz-left">
+        <div class="dz-icon">♫</div>
+        <div>
+          <div class="dz-title">playlist CSVs</div>
+          <div class="dz-sub" id="dzSub">drag all your .csv files here, or click to browse</div>
+        </div>
+      </div>
+      <button class="dz-btn" id="browseBtn" type="button">Choose files</button>
+      <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
+    </div>
+    <div class="dz-optional">Select the CSVs from your unzipped Exportify export at once. Each file's name becomes the playlist name. Include playlist CSVs and (optionally) <strong>Liked Songs</strong>.</div>
+    <div class="loading" id="loading">pressing your crate…</div>
+    <div class="err" id="errMsg"></div>
+  </div>
+
+  <nav class="toc" id="toc" aria-label="Tracklist"></nav>
+
+  <nav class="playlist-panel" id="plPanel" aria-label="Playlist sources">
+    <div class="toc-title">Side B · sources</div>
+    <div class="pl-controls">
+      <button type="button" id="plAll">all</button>
+      <button type="button" id="plMine">mine</button>
+      <button type="button" id="plNone">none</button>
+    </div>
+    <div class="pl-id">
+      <label for="plId">your id</label>
+      <input type="text" id="plId" autocomplete="off" spellcheck="false" placeholder="auto">
+    </div>
+    <div class="pl-summary" id="plSummary"></div>
+    <div class="pl-list" id="plList"></div>
+  </nav>
+
+  <div id="results"></div>
+
+  <footer>
+    <div class="foot-rule"></div>
+    PRESSED LOCALLY · NO DATA LEAVES THIS BROWSER
+  </footer>
+</div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const dropzone = $('dropzone');
+const fileInput = $('fileInput');
+const browseBtn = $('browseBtn');
+const dzSub = $('dzSub');
+const errMsg = $('errMsg');
+const loading = $('loading');
+const results = $('results');
+const toc = $('toc');
+const themeToggle = $('themeToggle');
+const plPanel = $('plPanel');
+const plAll = $('plAll');
+const plMine = $('plMine');
+const plNone = $('plNone');
+const plId = $('plId');
+const plSummary = $('plSummary');
+const plList = $('plList');
+
+let lastItems = [];
+let loadedPlaylists = [];
+let enabledSet = null;
+let myId = '';
+let owners = {};
+let lastMode = 'all';
+
+/* ---------- Theme (day / night) ---------- */
+function applyTheme(theme){
+  document.documentElement.dataset.theme = theme;
+  themeToggle.textContent = theme === 'day' ? 'night' : 'day';
+  try{ localStorage.setItem('liner-theme', theme); }catch(e){}
+}
+(function initTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem('liner-theme'); }catch(e){}
+  applyTheme(saved === 'day' ? 'day' : 'night');
+})();
+themeToggle.addEventListener('click', () => {
+  const cur = document.documentElement.dataset.theme === 'day' ? 'day' : 'night';
+  applyTheme(cur === 'day' ? 'night' : 'day');
+});
+
+const KEY_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const MOOD = {
+  euphoric: { name:'Euphoric', color:'var(--amber)', blurb:'fast, bright, loud' },
+  chill:    { name:'Chill',    color:'var(--teal)',  blurb:'slow, bright, airy' },
+  tense:    { name:'Tense',    color:'var(--clay)',  blurb:'fast, heavy, wired' },
+  moody:    { name:'Moody',    color:'var(--violet)',blurb:'slow, low, brooding' }
+};
+const MOOD_VERDICTS = {
+  euphoric: "cathartic and electric; you collect soundtracks for the good days, and the good days fight back.",
+  chill:    "sun-drenched and unhurried; a crate for drifting through afternoons, made of air and good light.",
+  tense:    "intense and wound tight; high-voltage songs with heavy hearts underneath.",
+  moody:    "brooding and tender; lowercase titles, late-night windows, and songs that understand."
+};
+
+/* ---------- File handling ---------- */
+browseBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+dropzone.addEventListener('click', () => fileInput.click());
+
+['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault(); dropzone.classList.add('drag');
+}));
+['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+}));
+dropzone.addEventListener('drop', (e) => {
+  const files = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.csv'));
+  if(files.length) handleFiles(files);
+});
+fileInput.addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  if(files.length) handleFiles(files);
+});
+
+function handleFiles(files){
+  errMsg.style.display = 'none';
+  loading.classList.add('on');
+  dzSub.textContent = files.length === 1 ? files[0].name : `${files.length} files selected`;
+
+  let remaining = files.length;
+  const playlists = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const playlistName = file.name.replace(/\.csv$/i, '');
+      Papa.parse(e.target.result, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (res) => { playlists.push({ name: playlistName, rows: res.data }); remaining--; if(remaining === 0) finish(playlists); },
+        error: () => { remaining--; if(remaining === 0) finish(playlists); }
+      });
+    };
+    reader.onerror = () => { remaining--; if(remaining === 0) finish(playlists); };
+    reader.readAsText(file);
+  });
+}
+
+function finish(playlists){
+  loading.classList.remove('on');
+  const items = flatten(playlists);
+  if(items.length === 0){
+    showError('No tracks found in those files. Make sure they\'re the CSVs Exportify produces, with a "Track Name" column.');
+    return;
+  }
+  loadedPlaylists = playlists;
+  enabledSet = new Set(playlists.map(p => p.name));
+  buildPlaylistPanel(playlists);
+  recompute(true);
+}
+
+function recompute(initial){
+  const active = loadedPlaylists.filter(p => enabledSet.has(p.name));
+  const items = flatten(active);
+  lastItems = items;
+  uniqueById = null;
+  updatePlSummary(active);
+  if(items.length === 0){
+    results.innerHTML = `
+      <section class="track-row">
+        <div class="num">-</div>
+        <div>
+          <div class="track-title">Nothing selected</div>
+          <div class="track-dek">Turn on at least one playlist in the <strong style="color:var(--paper)">sources</strong> panel to see what it contributes.</div>
+        </div>
+      </section>`;
+    results.style.display = 'block';
+    buildToc([]);
+    observeReveals();
+    return;
+  }
+  render(buildData(active, items), initial);
+}
+
+function dominantAdder(rows){
+  const counts = {};
+  rows.forEach(r => {
+    const v = (field(r, 'Added By', 'added by') || '').trim();
+    if(v) counts[v] = (counts[v]||0) + 1;
+  });
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  return top ? top[0] : '';
+}
+
+function detectMyId(playlists){
+  const counts = {};
+  playlists.forEach(p => {
+    const o = dominantAdder(p.rows);
+    if(o) counts[o] = (counts[o]||0) + 1;
+  });
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  return top ? top[0] : '';
+}
+
+function applyMine(){
+  const id = plId.value.trim();
+  const mine = loadedPlaylists.filter(p => owners[p.name] === id).map(p => p.name);
+  enabledSet = new Set(mine);
+  syncPanelButtons();
+  lastMode = 'mine';
+  recompute(false);
+}
+
+function syncPanelButtons(){
+  plList.querySelectorAll('.pl-item').forEach(b => {
+    const on = enabledSet.has(decodeURIComponent(b.dataset.pl));
+    b.classList.toggle('on', on);
+    b.classList.toggle('off', !on);
+  });
+}
+
+function buildPlaylistPanel(playlists){
+  owners = {};
+  playlists.forEach(p => { owners[p.name] = dominantAdder(p.rows); });
+  const detected = detectMyId(playlists);
+  if(!plId.value.trim() || myId === '') myId = detected;
+  plId.value = myId || '';
+
+  const sorted = playlists.slice().sort((a,b) => b.rows.length - a.rows.length);
+  plList.innerHTML = sorted.map(p => {
+    const owner = owners[p.name];
+    const isMine = myId !== '' && owner === myId;
+    return `
+    <button class="pl-item on${isMine ? ' mine' : ''}" type="button" data-pl="${encodeURIComponent(p.name)}" title="${owner ? 'mostly added by: ' + esc(owner) : 'no adder info'}">
+      <span class="pl-check">✓</span>
+      <span class="pl-name">${esc(p.name)}</span>
+      ${owner ? `<span class="pl-owner">${esc(owner)}</span>` : ''}
+      <span class="pl-count">${p.rows.length.toLocaleString()}</span>
+    </button>`;
+  }).join('');
+
+  plList.onclick = (e) => {
+    const btn = e.target.closest('.pl-item');
+    if(!btn) return;
+    const name = decodeURIComponent(btn.dataset.pl);
+    if(btn.classList.contains('off')){
+      btn.classList.remove('off');
+      btn.classList.add('on');
+      enabledSet.add(name);
+    }else{
+      btn.classList.add('off');
+      btn.classList.remove('on');
+      enabledSet.delete(name);
+    }
+    lastMode = 'custom';
+    recompute(false);
+  };
+
+  plAll.onclick = () => {
+    enabledSet = new Set(loadedPlaylists.map(p => p.name));
+    syncPanelButtons();
+    lastMode = 'all';
+    recompute(false);
+  };
+
+  plMine.onclick = () => applyMine();
+
+  plNone.onclick = () => {
+    enabledSet = new Set();
+    syncPanelButtons();
+    lastMode = 'none';
+    recompute(false);
+  };
+
+  plId.onchange = () => {
+    myId = plId.value.trim();
+    syncMineClasses();
+    if(lastMode === 'mine') applyMine();
+    else recompute(false);
+  };
+}
+
+function syncMineClasses(){
+  plList.querySelectorAll('.pl-item').forEach(b => {
+    const name = decodeURIComponent(b.dataset.pl);
+    const isMine = myId !== '' && owners[name] === myId;
+    b.classList.toggle('mine', isMine);
+    const owner = owners[name];
+    if(owner) b.title = 'mostly added by: ' + owner;
+  });
+}
+
+function updatePlSummary(active){
+  if(!plSummary) return;
+  const activeTracks = active.reduce((s,p) => s + p.rows.length, 0);
+  plSummary.textContent = `${active.length}/${loadedPlaylists.length} playlists · ${activeTracks.toLocaleString()} tracks`;
+}
+
+/* ---------- CSV helpers ---------- */
+function field(row, ...names){
+  for(const n of names){
+    if(row[n] !== undefined && row[n] !== '') return row[n];
+  }
+  return '';
+}
+function num(row, ...names){
+  const v = field(row, ...names);
+  if(v === '' || v === undefined) return null;
+  const n = parseFloat(v);
+  return isFinite(n) ? n : null;
+}
+function int(row, ...names){
+  const n = num(row, ...names);
+  return n === null ? null : Math.round(n);
+}
+function parseDate(s){
+  if(!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+function esc(str){
+  const div = document.createElement('div');
+  div.textContent = (str === null || str === undefined) ? '' : String(str);
+  return div.innerHTML;
+}
+function mean(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+function fmtDur(ms){
+  const s = Math.round(ms/1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtHours(hours){
+  return hours >= 24 ? (hours/24).toFixed(1) + ' days' : hours.toFixed(1) + ' hrs';
+}
+function plural(n, word){
+  return n === 1 ? `${n} ${word}` : `${n} ${word}s`;
+}
+
+/* ---------- Normalize rows into a common track shape ---------- */
+function flatten(playlists){
+  const items = [];
+  playlists.forEach(pl => {
+    pl.rows.forEach(row => {
+      const name = field(row, 'Track Name', 'name');
+      if(!name) return;
+      const artistField = field(row, 'Artist Name(s)', 'artist');
+      const artists = (artistField||'').split(/[,;]\s*/).filter(Boolean).map(n => ({ name: n }));
+      const genresField = field(row, 'Genres');
+      const genres = genresField ? genresField.split(/[,;]\s*/).filter(Boolean) : [];
+      const explicitRaw = (field(row, 'Explicit', 'explicit') + '').toLowerCase();
+      const pop = parseInt(field(row, 'Popularity', 'popularity'), 10);
+      const idRaw = field(row, 'Spotify ID', 'Track URI', 'uri') || (name + '::' + artistField);
+
+      const t = {
+        id: idRaw,
+        name,
+        artists,
+        genres,
+        label: field(row, 'Record Label', 'Label'),
+        album: { name: field(row, 'Album Name', 'album'), release_date: field(row, 'Release Date', 'date') },
+        duration_ms: parseInt(field(row, 'Duration (ms)', 'Track Duration (ms)', 'duration'), 10) || 0,
+        popularity: isFinite(pop) ? pop : null,
+        explicit: explicitRaw === 'true' || explicitRaw === '1',
+        addedAt: parseDate(field(row, 'Added At')),
+        feats: {
+          danceability: num(row, 'Danceability'),
+          energy: num(row, 'Energy'),
+          key: int(row, 'Key'),
+          loudness: num(row, 'Loudness'),
+          mode: int(row, 'Mode'),
+          speechiness: num(row, 'Speechiness'),
+          acousticness: num(row, 'Acousticness'),
+          instrumentalness: num(row, 'Instrumentalness'),
+          liveness: num(row, 'Liveness'),
+          valence: num(row, 'Valence'),
+          tempo: num(row, 'Tempo'),
+          time_signature: int(row, 'Time Signature')
+        }
+      };
+      items.push({ t, playlist: pl.name });
+    });
+  });
+  return items;
+}
+
+/* ---------- Stats ---------- */
+function buildData(playlists, items){
+  const d = {};
+
+  d.playlistCount = playlists.length;
+  d.totalTracks = items.length;
+
+  const idCounts = {};
+  items.forEach(({t}) => { idCounts[t.id] = (idCounts[t.id]||0) + 1; });
+  d.unique = Object.keys(idCounts).length;
+  d.totalMs = items.reduce((s,{t}) => s + (t.duration_ms||0), 0);
+
+  const artistCounts = {};
+  items.forEach(({t}) => (t.artists||[]).forEach(a => { artistCounts[a.name] = (artistCounts[a.name]||0) + 1; }));
+  d.uniqueArtists = Object.keys(artistCounts).length;
+  d.topArtists = Object.entries(artistCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  d.maxArtist = d.topArtists.length ? d.topArtists[0][1] : 1;
+
+  const decadeCounts = {};
+  items.forEach(({t}) => {
+    const rd = t.album && t.album.release_date;
+    if(!rd) return;
+    const year = parseInt(rd.slice(0,4), 10);
+    if(!year) return;
+    const dec = Math.floor(year/10)*10;
+    decadeCounts[dec] = (decadeCounts[dec]||0) + 1;
+  });
+  d.decades = Object.entries(decadeCounts).sort((a,b)=>a[0]-b[0]);
+  d.maxDecade = Math.max(...d.decades.map(x=>x[1]), 1);
+
+  const genreSets = {};
+  items.forEach(({t}) => (t.genres||[]).forEach(g => {
+    if(!genreSets[g]) genreSets[g] = new Set();
+    genreSets[g].add(t.id);
+  }));
+  d.topGenres = Object.entries(genreSets).map(([g,set]) => [g,set.size]).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  d.maxGenre = d.topGenres.length ? d.topGenres[0][1] : 1;
+
+  const popVals = items.map(({t}) => t.popularity).filter(p => typeof p === 'number');
+  d.avgPop = mean(popVals);
+  d.explicitPct = Math.round(100 * items.filter(({t}) => t.explicit).length / items.length);
+
+  const appear = {};
+  items.forEach(({t}) => {
+    if(!appear[t.id]) appear[t.id] = { name: t.name, artist: (t.artists||[]).map(a=>a.name).join(', '), count: 0 };
+    appear[t.id].count += 1;
+  });
+  d.mostRepeated = Object.values(appear).sort((a,b)=>b.count-a.count)[0];
+
+  d.crates = playlists
+    .map(pl => ({ name: pl.name, count: pl.rows.length }))
+    .sort((a,b) => b.count - a.count);
+
+  let oldest = null, newest = null;
+  items.forEach(({t}) => {
+    const rd = t.album && t.album.release_date;
+    if(!rd) return;
+    if(!oldest || rd < oldest.rd) oldest = { rd, name: t.name, artist: (t.artists||[]).map(a=>a.name).join(', ') };
+    if(!newest || rd > newest.rd) newest = { rd, name: t.name, artist: (t.artists||[]).map(a=>a.name).join(', ') };
+  });
+  d.oldest = oldest; d.newest = newest;
+
+  /* ----- Feature analysis on UNIQUE tracks (no playlist duplication) ----- */
+  const byId = new Map();
+  items.forEach(({t}) => { if(!byId.has(t.id)) byId.set(t.id, t); });
+  const ut = Array.from(byId.values());
+
+  d.hasFeats = ut.some(t => t.feats.valence !== null || t.feats.energy !== null);
+
+  const moodTracks = ut.filter(t => t.feats.valence !== null && t.feats.energy !== null);
+  d.moodCount = moodTracks.length;
+  const quad = {};
+  Object.keys(MOOD).forEach(k => quad[k] = []);
+  moodTracks.forEach(t => {
+    const v = t.feats.valence, e = t.feats.energy;
+    quad[v >= 0.5 && e >= 0.5 ? 'euphoric' : v >= 0.5 ? 'chill' : e >= 0.5 ? 'tense' : 'moody'].push(t);
+  });
+  d.quadrants = Object.entries(quad).map(([k, arr]) => ({
+    key: k, count: arr.length,
+    pct: moodTracks.length ? Math.round(100*arr.length/moodTracks.length) : 0
+  })).sort((a,b)=>b.count-a.count);
+  d.dominant = d.quadrants[0];
+  d.centroid = {
+    v: mean(moodTracks.map(t => t.feats.valence)),
+    e: mean(moodTracks.map(t => t.feats.energy))
+  };
+  d.centroidQuad = (d.centroid.v !== null && d.centroid.e !== null)
+    ? (d.centroid.v >= 0.5 && d.centroid.e >= 0.5 ? 'euphoric'
+      : d.centroid.v >= 0.5 ? 'chill'
+      : d.centroid.e >= 0.5 ? 'tense'
+      : 'moody')
+    : null;
+  d.avgValence = mean(moodTracks.map(t => t.feats.valence));
+  d.avgEnergy  = mean(moodTracks.map(t => t.feats.energy));
+
+  const keyCounts = ut.filter(t => t.feats.key !== null).reduce((arr,t) => { arr[t.feats.key] = (arr[t.feats.key]||0)+1; return arr; }, new Array(12).fill(0));
+  d.keyCounts = keyCounts;
+  d.keyTotal = keyCounts.reduce((a,b)=>a+b,0);
+  d.maxKey = Math.max(...keyCounts, 1);
+  d.topKeyIdx = keyCounts.indexOf(Math.max(...keyCounts));
+  d.topKeys = keyCounts.map((c,i)=>({ name: KEY_NAMES[i], count: c }))
+    .filter(k => k.count > 0)
+    .sort((a,b) => b.count - a.count)
+    .slice(0,3);
+  const modeTracks = ut.filter(t => t.feats.mode !== null);
+  const major = modeTracks.filter(t => t.feats.mode === 1).length;
+  d.majorPct = modeTracks.length ? Math.round(100*major/modeTracks.length) : null;
+  d.modeTotal = modeTracks.length;
+
+  const sigCounts = {};
+  ut.forEach(t => {
+    const s = t.feats.time_signature;
+    if(!s) return;
+    sigCounts[s] = (sigCounts[s]||0) + 1;
+  });
+  d.sigs = Object.entries(sigCounts).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  d.maxSig = d.sigs.length ? d.sigs[0][1] : 1;
+
+  const labelCounts = {};
+  ut.forEach(t => { if(t.label && t.label.trim() && t.label.toLowerCase() !== 'undefined') labelCounts[t.label] = (labelCounts[t.label]||0)+1; });
+  d.topLabels = Object.entries(labelCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  d.maxLabel = d.topLabels.length ? d.topLabels[0][1] : 1;
+
+  const withFeat = t => !!(t.feats.danceability !== null && t.feats.liveness !== null && t.feats.instrumentalness !== null);
+  const featTracks = ut.filter(withFeat);
+  d.danceAvg = mean(featTracks.map(t => t.feats.danceability));
+  d.liveAvg  = mean(featTracks.map(t => t.feats.liveness));
+  d.instrPct = Math.round(100 * mean(featTracks.map(t => t.feats.instrumentalness)));
+  d.tempoAvg = mean(ut.filter(t => t.feats.tempo !== null).map(t => t.feats.tempo));
+  d.featureCover = featTracks.length;
+
+  const durVals = ut.map(t => t.duration_ms).filter(v => v > 0);
+  d.avgDur = mean(durVals);
+  d.longest = ut.filter(t => t.duration_ms > 0).sort((a,b)=>b.duration_ms-a.duration_ms)[0] || null;
+  d.shortest = ut.filter(t => t.duration_ms > 0).sort((a,b)=>a.duration_ms-b.duration_ms)[0] || null;
+
+  /* ----- Timeline: unique tracks by earliest "Added At" ----- */
+  const firstAdded = {};
+  ut.forEach(t => {
+    if(t.addedAt && t.addedAt.getFullYear() >= 2000){
+      const ts = t.addedAt.getTime();
+      if(!firstAdded[t.id] || ts < firstAdded[t.id].ts) firstAdded[t.id] = { ts, year: t.addedAt.getFullYear() };
+    }
+  });
+  const yearCounts = {};
+  Object.values(firstAdded).forEach(({year}) => { yearCounts[year] = (yearCounts[year]||0) + 1; });
+  d.timeline = Object.entries(yearCounts).sort((a,b)=>a[0]-b[0]);
+  d.timelineCover = Object.keys(firstAdded).length;
+  d.timelinePeak = d.timeline.length ? d.timeline.slice().sort((a,b)=>b[1]-a[1])[0] : null;
+  d.maxTimeline = d.timeline.length ? Math.max(...d.timeline.map(x=>x[1])) : 1;
+
+  d.diversity = Math.round(100 * d.uniqueArtists / d.unique);
+  return d;
+}
+
+function showError(msg){
+  errMsg.textContent = msg;
+  errMsg.style.display = 'block';
+}
+
+/* ---------- Rendering ---------- */
+function render(d, scroll){
+  const sections = [];
+  sections.push(secTally(d));
+  sections.push(secArtists(d));
+  sections.push(secGenres(d));
+  sections.push(secEra(d));
+  sections.push(secMood(d));
+  sections.push(secKeys(d));
+  sections.push(secCharacter(d));
+  sections.push(secTimeline(d));
+  sections.push(secTimeCapsule(d));
+  sections.push(secCrates(d));
+  sections.push(secLabels(d));
+
+  const rendered = sections.filter(Boolean);
+  let html = '';
+  rendered.forEach((sec, i) => {
+    html += trackRow(String(i+1).padStart(2,'0'), sec.title, sec.dek, sec.body, `sec-${i+1}`);
+  });
+
+  results.innerHTML = html;
+  results.style.display = 'block';
+  if(scroll !== false) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  buildToc(rendered);
+  observeReveals();
+}
+
+function trackRow(num, title, dek, body, id){
+  return `
+    <section class="track-row" id="${id}">
+      <div class="num">${num}</div>
+      <div>
+        <div class="track-title">${title}</div>
+        ${dek ? `<div class="track-dek">${dek}</div>` : ''}
+        <div class="block">${body}</div>
+      </div>
+    </section>
+  `;
+}
+
+function secTally(d){
+  return {
+    title: 'The tally',
+    dek: `The whole crate at a glance: <strong>${d.unique.toLocaleString()}</strong> unique songs across <strong>${d.playlistCount}</strong> playlists.`,
+    body: `
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-num">${d.playlistCount}</div><div class="stat-label">PLAYLISTS</div></div>
+        <div class="stat"><div class="stat-num">${d.totalTracks.toLocaleString()}</div><div class="stat-label">TRACK SLOTS FILLED</div></div>
+        <div class="stat"><div class="stat-num">${d.unique.toLocaleString()}</div><div class="stat-label">UNIQUE SONGS</div></div>
+        <div class="stat"><div class="stat-num">${fmtHours(d.totalMs/1000/60/60)}</div><div class="stat-label">TOTAL RUNTIME</div></div>
+        <div class="stat"><div class="stat-num">${d.diversity}%</div><div class="stat-label">ARTIST DIVERSITY</div></div>
+        <div class="stat"><div class="stat-num">${d.avgPop !== null ? Math.round(d.avgPop) : '-'}</div><div class="stat-label">AVG. POPULARITY (0–100)</div></div>
+      </div>
+      <div class="stat-inline">
+        <span>avg track <b>${d.avgDur ? fmtDur(d.avgDur) : '-'}</b></span>
+        ${d.longest ? `<span>longest <b>${esc(d.longest.name)}</b> · ${fmtDur(d.longest.duration_ms)}</span>` : ''}
+        ${d.shortest ? `<span>shortest <b>${esc(d.shortest.name)}</b> · ${fmtDur(d.shortest.duration_ms)}</span>` : ''}
+      </div>
+    `
+  };
+}
+
+function secArtists(d){
+  if(!d.topArtists.length) return null;
+  return {
+    title: 'On repeat',
+    dek: 'Your most-appearing artists, counted across every playlist. Click any name to see the tracks that got them there.',
+    body: barList(d.topArtists.map(([name,count]) => ({ name, count, kind:'artist', value:name })), d.maxArtist, '${count} tracks')
+  };
+}
+
+function secGenres(d){
+  if(!d.topGenres.length) return null;
+  return {
+    title: 'Your genres',
+    dek: 'From Spotify\'s own per-track tagging (unique tracks, so no double-counting across playlists). Click a genre to see its tracks.',
+    body: barList(d.topGenres.map(([name,count]) => ({ name, count, kind:'genre', value:name })), d.maxGenre, '${count} tracks')
+  };
+}
+
+function secEra(d){
+  if(!d.decades.length) return null;
+  const rows = d.decades.map(([decade,count]) => `
+    <div class="decade-row">
+      <div class="decade-label">${decade}s</div>
+      <div class="decade-track"><div class="decade-fill" style="width:${(count/d.maxDecade*100).toFixed(0)}%"></div></div>
+      <div class="decade-count">${count}</div>
+    </div>
+  `).join('');
+  return { title: 'Your era', dek: 'What decade your music actually comes from, by original release year.', body: `<div class="bar-list">${rows}</div>` };
+}
+
+function secMood(d){
+  if(!d.hasFeats || d.moodCount === 0) return null;
+  const rows = d.quadrants.map(q => `
+    <div class="ml-row">
+      <span class="swatch" style="background:${MOOD[q.key].color}"></span>
+      <span class="ml-name">${MOOD[q.key].name} <span style="color:var(--paper-dim-2)">· ${MOOD[q.key].blurb}</span></span>
+      <span class="ml-val">${q.count} · ${q.pct}%</span>
+    </div>
+  `).join('');
+  const verdict = d.centroidQuad ? `
+    <div class="mood-verdict">
+      Your crate leans <em>${MOOD[d.centroidQuad].name.toLowerCase()}</em>: ${MOOD_VERDICTS[d.centroidQuad]}
+      <div class="stat-inline" style="margin-top:10px;">
+        <span>avg valence <b>${d.avgValence !== null ? d.avgValence.toFixed(2) : '-'}</b></span>
+        <span>avg energy <b>${d.avgEnergy !== null ? d.avgEnergy.toFixed(2) : '-'}</b></span>
+      </div>
+      ${d.dominant && d.dominant.count ? `<div style="margin-top:10px;font-size:12px;color:var(--paper-dim-2);">most common mood: <strong style="color:var(--paper)">${MOOD[d.dominant.key].name}</strong> (${d.dominant.pct}%)</div>` : ''}
+    </div>
+  ` : '';
+  return {
+    title: 'Mood map',
+    dek: `Where every <strong>${d.moodCount.toLocaleString()}</strong> featurable song sits on the valence × energy plane. Top = intense, right = bright.`,
+    body: `
+      <div class="mood-wrap">
+        ${moodSvg(d)}
+        <div class="mood-legend">${rows}</div>
+      </div>
+      ${verdict}
+    `
+  };
+}
+
+function moodSvg(d){
+  const W = 420, H = 320, pl = 30, pr = 14, pt = 18, pb = 22;
+  const x = v => pl + v * (W - pl - pr);
+  const y = e => pt + (1 - e) * (H - pt - pb);
+
+  let dots = '';
+  const pts = [];
+  const quadAll = {};
+  Object.keys(MOOD).forEach(k => quadAll[k] = []);
+  for(const [,t] of allTracks()){
+    const v = t.feats.valence, e = t.feats.energy;
+    if(v === null || e === null) continue;
+    const q = v >= 0.5 && e >= 0.5 ? 'euphoric' : v >= 0.5 ? 'chill' : e >= 0.5 ? 'tense' : 'moody';
+    pts.push({ v, e, name: t.name, q });
+    quadAll[q].push({v,e});
+  }
+  const sampled = pts.length > 3000 ? shuffle(pts).slice(0,3000) : pts;
+  dots = sampled.map(p => `
+    <circle cx="${x(p.v).toFixed(1)}" cy="${y(p.e).toFixed(1)}" r="1.7" fill="${MOOD[p.q].color}" fill-opacity="0.34">
+      <title>${esc(p.name)}</title>
+    </circle>
+  `).join('');
+
+  const bgMidX = pl + (W - pl - pr)/2, bgMidY = pt + (H - pt - pb)/2;
+  const bw = (W - pl - pr)/2, bh = (H - pt - pb)/2;
+  const bg = [
+    ['moody', 1, 0], ['chill', 1, 1], ['tense', 0, 0], ['euphoric', 0, 1]
+  ].map(([key, row, col]) => {
+    const x0 = col === 0 ? pl : bgMidX;
+    const y0 = row === 0 ? pt : bgMidY;
+    return `<rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="${MOOD[key].color}" fill-opacity="0.05"/>`;
+  }).join('');
+
+  const labels = ['moody','chill','tense','euphoric'].map(q => {
+    const lx = q === 'moody' ? pl + 10 : q === 'tense' ? pl + 10 : W - 10;
+    const ly = (q === 'tense' || q === 'euphoric') ? pt + 14 : H - 10;
+    const anchor = q === 'chill' || q === 'euphoric' ? 'end' : 'start';
+    return `<text x="${lx}" y="${ly}" text-anchor="${anchor}" font-size="11" font-family="'IBM Plex Mono',monospace" letter-spacing=".08em" fill="${MOOD[q].color}" opacity="0.9" style="text-transform:uppercase">${q}</text>`;
+  }).join('');
+
+  const midX = x(0.5), midY = y(0.5);
+  const cX = x(d.centroid.v), cY = y(d.centroid.e);
+  const centroid = `
+    <line x1="${midX}" y1="${pt}" x2="${midX}" y2="${H-pb}" stroke="var(--line)" stroke-dasharray="3 4"/>
+    <line x1="${pl}" y1="${midY}" x2="${W-pr}" y2="${midY}" stroke="var(--line)" stroke-dasharray="3 4"/>
+    <circle cx="${cX}" cy="${cY}" r="4.5" fill="none" stroke="var(--paper)" stroke-width="1.6"/>
+    <circle cx="${cX}" cy="${cY}" r="1.8" fill="var(--paper)"/>
+  `;
+
+  return `<svg class="mood-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mood map of valence against energy">${bg}${dots}${centroid}${labels}</svg>`;
+}
+
+function secKeys(d){
+  if(!d.keyTotal) return null;
+  const majorLabel = d.majorPct === null ? '-' : `${d.majorPct}%`;
+  const placeLabels = ['your home key', 'second place', 'third place'];
+  const topCalls = d.topKeys.map((k, i) => `
+    <div class="key-callout"><strong>${k.name}</strong>${placeLabels[i]} · ${k.count.toLocaleString()} songs</div>
+  `).join('');
+  const sigRows = d.sigs.map(([sig,count]) => `
+    <div class="sig-row">
+      <div class="sig-label">${sig}/4</div>
+      <div class="sig-track"><div class="sig-fill" style="width:${(count/d.maxSig*100).toFixed(0)}%"></div></div>
+      <div class="sig-count">${count}</div>
+    </div>
+  `).join('');
+  return {
+    title: 'Tonal identity',
+    dek: `Key of your <strong>${d.keyTotal.toLocaleString()}</strong> keyed songs (unique tracks), major vs minor, and the time signatures that keep time.`,
+    body: `
+      <div class="keys-wrap">
+        ${keyWheel(d)}
+        <div class="keys-side">
+          ${topCalls}
+          <div class="key-callout"><strong>${majorLabel}</strong>major-mode share</div>
+          ${d.modeTotal ? `<div class="key-callout">of ${d.modeTotal.toLocaleString()} songs with a mode tag</div>` : ''}
+          ${d.sigs.length ? `<div style="margin-top:6px;"><div class="track-dek" style="margin-top:0;font-size:12.5px;">Time signatures</div><div style="margin-top:10px;">${sigRows}</div></div>` : ''}
+        </div>
+      </div>
+    `
+  };
+}
+
+function keyWheel(d){
+  const cx = 150, cy = 150, r0 = 44;
+  let paths = '', labels = '', total = 0;
+  d.keyCounts.forEach((c,i) => { if(c) total += c; });
+  const max = d.maxKey;
+  d.keyCounts.forEach((c,i) => {
+    const a0 = (-90 + i*30) * Math.PI/180;
+    const a1 = (-90 + (i+1)*30) * Math.PI/180;
+    const mid = (a0 + a1)/2;
+    if(c === 0){
+      labels += `<text x="${(cx + (r0+24)*Math.cos(mid)).toFixed(1)}" y="${(cy + (r0+24)*Math.sin(mid)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="9" font-family="'IBM Plex Mono',monospace" fill="var(--paper-dim-2)">${KEY_NAMES[i]}</text>`;
+      return;
+    }
+    const r = r0 + (c/max)*74;
+    const x0 = cx + r0*Math.cos(a0), y0 = cy + r0*Math.sin(a0);
+    const x1 = cx + r*Math.cos(a0),  y1 = cy + r*Math.sin(a0);
+    const x2 = cx + r*Math.cos(a1),  y2 = cy + r*Math.sin(a1);
+    const x3 = cx + r0*Math.cos(a1), y3 = cy + r0*Math.sin(a1);
+    const dpath = `M ${x0.toFixed(1)} ${y0.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x3.toFixed(1)} ${y3.toFixed(1)} A ${r0.toFixed(1)} ${r0.toFixed(1)} 0 0 0 ${x0.toFixed(1)} ${y0.toFixed(1)} Z`;
+    const isTop = i === d.topKeyIdx;
+    const op = 0.22 + 0.78*(c/max);
+    paths += `<path d="${dpath}" fill="${isTop ? 'var(--amber)' : 'var(--violet)'}" fill-opacity="${isTop ? 1 : op}" stroke="var(--ink)" stroke-width="1"><title>${KEY_NAMES[i]}: ${c} tracks</title></path>`;
+    const lr = r + 16;
+    labels += `<text x="${(cx + lr*Math.cos(mid)).toFixed(1)}" y="${(cy + lr*Math.sin(mid)).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-family="'IBM Plex Mono',monospace" fill="${isTop ? 'var(--amber)' : 'var(--paper-dim)'}">${KEY_NAMES[i]}</text>`;
+  });
+  return `<svg class="keys-svg" viewBox="0 0 300 300" role="img" aria-label="Key wheel">
+    <circle cx="${cx}" cy="${cy}" r="${r0}" fill="var(--surface-2)" stroke="var(--line)"/>
+    <text x="${cx}" y="${cy-6}" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="13" fill="var(--paper)">${total}</text>
+    <text x="${cx}" y="${cy+10}" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8" letter-spacing=".1em" fill="var(--paper-dim)">KEYED</text>
+    ${paths}${labels}
+  </svg>`;
+}
+
+function secCharacter(d){
+  const b = [];
+  b.push({ name:'Explicit share', val:`${d.explicitPct}%` });
+  b.push({ name:'Avg danceability', val:d.danceAvg !== null ? d.danceAvg.toFixed(2) : '-' });
+  b.push({ name:'Avg liveness', val:d.liveAvg !== null ? d.liveAvg.toFixed(2) : '-' });
+  b.push({ name:'Instrumental share', val:d.instrPct !== null ? `${d.instrPct}%` : '-' });
+  if(d.tempoAvg) b.push({ name:'Avg tempo', val:`${Math.round(d.tempoAvg)} BPM` });
+  if(d.dominant && d.dominant.count) b.push({ name:'Dominant mood', val:MOOD[d.dominant.key].name });
+  const grid = b.map(s => `
+    <div class="stat"><div class="stat-num" style="font-size:20px;">${esc(s.val)}</div><div class="stat-label">${esc(s.name).toUpperCase()}</div></div>
+  `).join('');
+  const repeat = d.mostRepeated && d.mostRepeated.count > 1
+    ? `<div class="track-dek" style="margin-top:18px;">Your most-repeated pick: <strong style="color:var(--paper)">${esc(d.mostRepeated.name)}</strong> by ${esc(d.mostRepeated.artist)}. It earned its way into ${d.mostRepeated.count} different playlists.</div>`
+    : '';
+  return { title: 'Character', dek: d.featureCover ? `From the audio features of ${d.featureCover.toLocaleString()} fully-featured songs.` : '', body: `<div class="stat-grid">${grid}</div>${repeat}` };
+}
+
+function secTimeline(d){
+  if(!d.timeline.length) return null;
+  const rows = d.timeline.map(([year,count]) => `
+    <div class="tl-row">
+      <div class="tl-label">${year}</div>
+      <div class="tl-track"><div class="tl-fill" style="width:${(count/d.maxTimeline*100).toFixed(0)}%"></div></div>
+      <div class="tl-count">${count}</div>
+    </div>
+  `).join('');
+  const peak = d.timelinePeak ? ` Your most active year on record was <strong style="color:var(--paper)">${d.timelinePeak[0]}</strong>, when you added ${d.timelinePeak[1]} songs.` : '';
+  return {
+    title: 'The timeline',
+    dek: `When you actually added these songs (${d.timelineCover.toLocaleString()} with an add-date; first add wins if a song lives in several playlists).${peak}`,
+    body: `<div class="bar-list">${rows}</div>`
+  };
+}
+
+function secTimeCapsule(d){
+  if(!d.oldest || !d.newest) return null;
+  return {
+    title: 'Time capsule',
+    dek: `The oldest and newest records in your crate: your ear's entire recorded span.`,
+    body: `
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat">
+          <div class="stat-label" style="color:var(--amber);letter-spacing:.08em;">OLDEST · ${d.oldest.rd.slice(0,4)}</div>
+          <div class="stat-num" style="font-size:18px;margin-top:8px;">${esc(d.oldest.name)}</div>
+          <div class="stat-label">${esc(d.oldest.artist)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" style="color:var(--amber);letter-spacing:.08em;">NEWEST · ${d.newest.rd.slice(0,4)}</div>
+          <div class="stat-num" style="font-size:18px;margin-top:8px;">${esc(d.newest.name)}</div>
+          <div class="stat-label">${esc(d.newest.artist)}</div>
+        </div>
+      </div>
+    `
+  };
+}
+
+function secCrates(d){
+  if(!d.crates.length) return null;
+  const top = d.crates.slice(0,6);
+  const max = top[0] ? top[0].count : 1;
+  return {
+    title: 'The biggest crates',
+    dek: 'The heaviest playlists by track count.',
+    body: barList(top.map(c => ({ name: c.name, count: c.count, kind:'playlist', value:c.name })), max, '${count} tracks')
+  };
+}
+
+function secLabels(d){
+  if(!d.topLabels.length) return null;
+  return {
+    title: 'Label loyalty',
+    dek: 'The record labels behind your unique tracks, and the ones you keep circling back to.',
+    body: barList(d.topLabels.map(([name,count]) => ({ name, count, kind:'label', value:name })), d.maxLabel, '${count} tracks')
+  };
+}
+
+/* ---------- Shared bar list with click-to-drill ---------- */
+function barList(items, max, suffix){
+  return `
+    <div class="bar-list">
+      ${items.map(it => `
+        <div class="bar-item" data-kind="${it.kind}" data-value="${encodeURIComponent(it.value)}">
+          <div class="bar-item-top">
+            <span class="bar-item-name">${esc(it.name)}</span>
+            <span class="bar-item-right"><span class="bar-item-val">${suffix.replace('${count}', it.count)}</span><span class="bar-chevron">▸</span></span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(it.count/max*100).toFixed(0)}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+results.addEventListener('click', (e) => {
+  const row = e.target.closest('.bar-item[data-kind]');
+  if(!row) return;
+  toggleDetail(row, row.dataset.kind, decodeURIComponent(row.dataset.value));
+});
+
+function toggleDetail(row, kind, value){
+  const existing = row.querySelector('.bar-detail');
+  if(existing){
+    existing.remove();
+    row.classList.remove('open');
+    return;
+  }
+  row.classList.add('open');
+
+  const matches = lastItems.filter(({t, playlist}) => {
+    if(kind === 'genre') return (t.genres||[]).includes(value);
+    if(kind === 'artist') return (t.artists||[]).some(a => a.name === value);
+    if(kind === 'label') return t.label === value;
+    if(kind === 'playlist') return playlist === value;
+    return false;
+  });
+
+  let rows;
+  if(kind === 'genre'){
+    const byId = {};
+    matches.forEach(({t, playlist}) => {
+      if(!byId[t.id]) byId[t.id] = { t, playlists: [] };
+      if(!byId[t.id].playlists.includes(playlist)) byId[t.id].playlists.push(playlist);
+    });
+    rows = Object.values(byId)
+      .map(({t, playlists}) => ({ t, playlist: playlists.join(', ') }))
+      .sort((a,b) => a.t.name.localeCompare(b.t.name));
+  }else{
+    rows = matches.sort((a,b) => a.playlist.localeCompare(b.playlist) || a.t.name.localeCompare(b.t.name));
+  }
+
+  const detail = document.createElement('div');
+  detail.className = 'bar-detail';
+  if(rows.length === 0){
+    detail.innerHTML = '<div class="bar-detail-empty">No tracks found.</div>';
+  }else{
+    detail.innerHTML = `
+      <div class="bar-detail-head"><span>Track</span><span>Artist</span><span class="bdr-head-playlist">Playlist</span></div>
+      ${rows.map(({t, playlist}) => `
+        <div class="bar-detail-row">
+          <span class="bdr-track">${esc(t.name)}</span>
+          <span class="bdr-artist">${esc((t.artists||[]).map(a=>a.name).join(', '))}</span>
+          <span class="bdr-playlist">${esc(playlist)}</span>
+        </div>
+      `).join('')}
+    `;
+  }
+  row.appendChild(detail);
+}
+
+/* ---------- Unique-track registry (for SVG scatter) ---------- */
+let uniqueById = null;
+function allTracks(){
+  if(!uniqueById){
+    uniqueById = new Map();
+    lastItems.forEach(({t}) => { if(!uniqueById.has(t.id)) uniqueById.set(t.id, t); });
+  }
+  return uniqueById;
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ---------- Reveal on scroll ---------- */
+function observeReveals(){
+  const rows = results.querySelectorAll('.track-row');
+  if(!('IntersectionObserver' in window)){
+    rows.forEach(el => el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(en => { if(en.isIntersecting) en.target.classList.add('in'); });
+  }, { threshold: 0.06 });
+  rows.forEach(el => io.observe(el));
+}
+
+/* ---------- Table of contents ---------- */
+function buildToc(rendered){
+  const links = rendered.map((sec, i) => `
+    <a href="#sec-${i+1}" data-target="sec-${i+1}">
+      <span class="toc-n">${String(i+1).padStart(2,'0')}</span>
+      <span>${esc(sec.title)}</span>
+    </a>
+  `).join('');
+  toc.innerHTML = `<div class="toc-title">Tracklist</div>${links}`;
+  const rows = results.querySelectorAll('.track-row');
+  if(!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if(!en.isIntersecting) return;
+      toc.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.target === en.target.id));
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  rows.forEach(el => io.observe(el));
+}
+</script>
+</body>
+</html>
